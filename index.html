@@ -61,7 +61,14 @@ body{
   pointer-events:none;z-index:9999;
   transform:translate(-50%,-50%);
   transition:width 0.2s,height 0.2s,background 0.2s,opacity 0.2s;
-  mix-blend-mode:difference;
+  /* NOTE: mix-blend-mode:difference used to sit here. It inverts whatever
+     color is underneath the cursor, which looks fine over the flat dark
+     card backgrounds but produces an unpredictable bright (often yellow)
+     blob whenever it passes over a photo with varied colors — exactly the
+     "glitch" seen while hovering the project screenshots. A static glow
+     gives the same sense of a glowing cursor without ever fighting with
+     whatever image is underneath it. */
+  box-shadow:0 0 10px rgba(59,130,246,0.65);
 }
 #cursor-ring{
   position:fixed;width:36px;height:36px;
@@ -118,7 +125,7 @@ nav{
 .nav-links a.active{color:var(--accent);}
 .nav-links a.active::after{transform:scaleX(1);}
 .hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:none;padding:4px;}
-.hamburger span{display:block;width:22px;height:2px;background:var(--muted2);border-radius:2px;transition:all 0.3s;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--muted2);border-radius:2px;}
 
 .linkedin-chip::before{
   content:'';width:16px;height:16px;display:inline-block;
@@ -251,46 +258,41 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
   font-weight:300;
 }
 .hero-btns{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem;}
+
+/* Buttons: the hover colour is applied as a separate ::before layer that
+   only ever transitions its OPACITY. This avoids trying to transition
+   `background` directly from a gradient to a flat colour (or from
+   transparent to a gradient) — browsers can't interpolate between those
+   two value types, so they used to just snap instantly partway through
+   the transition, which read as a jarring "double colour" flash. Opacity
+   always interpolates smoothly, so the hover colour now fades in cleanly. */
 .btn-glow{
   display:inline-flex;align-items:center;justify-content:center;
-  text-decoration:none;
+  text-decoration:none;position:relative;isolation:isolate;overflow:hidden;
   padding:0.75rem 1.8rem;border-radius:8px;font-weight:600;
   font-size:0.88rem;letter-spacing:0.5px;cursor:none;
-  font-family:var(--font-mono);transition:all 0.25s;
-  border:none;
+  font-family:var(--font-mono);color:#ffffff;border:none;
+  transition:transform 0.3s ease;
 }
-.btn-primary-glow{
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  color: #ffffff;
-  transition:all 0.3s ease;
+.btn-glow:hover{transform:translateY(-3px);}
+.btn-glow:active{transform:scale(0.96);box-shadow:none;}
+.btn-glow::before{
+  content:'';position:absolute;inset:0;z-index:-1;
+  opacity:0;transition:opacity 0.3s ease;
 }
-.btn-primary-glow:hover{
-  background:#4752C4;
-  color:#ffffff;
-  transform:translateY(-3px);
-  
-}
-.btn-primary-glow:active{
-  transform:scale(0.96);
-  box-shadow:none;
-}
+.btn-glow:hover::before{opacity:1;}
+
+.btn-primary-glow{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.btn-primary-glow::before{background:#4752C4;}
+
 .btn-outline-glow{
   background:transparent;
   border:1.5px solid rgba(59,130,246,0.4);
-  color:#ffffff;
-  transition:all 0.3s ease;
+  transition:transform 0.3s ease,border-color 0.3s ease;
 }
-.btn-outline-glow:hover{
-  background:linear-gradient(90deg,var(--accent2),var(--accent));
-  color:#ffffff;
-  border-color:var(--accent);
-  transform:translateY(-3px);
-  
-}
-.btn-outline-glow:active{
-  transform:scale(0.96);
-  box-shadow:none;
-}
+.btn-outline-glow::before{background:linear-gradient(90deg,var(--accent2),var(--accent));}
+.btn-outline-glow:hover{border-color:var(--accent);}
+
 .socials-row{display:flex;gap:0.8rem;}
 .social-chip{
   display:flex;align-items:center;gap:0.5rem;
@@ -300,14 +302,11 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
   background:transparent;
   font-size:0.78rem;text-decoration:none;
   font-family:var(--font-mono);
-  transition:all 0.25s ease;
+  transition:background-color 0.25s ease,border-color 0.25s ease;
 }
 .social-chip:hover{
   background:#535df6;
   border-color:var(--accent2);
-  color:#ffffff;
-  transform:none;
-  
 }
 .social-chip:active{
   transform:scale(0.96);
@@ -350,11 +349,8 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
 .hero-badges{display:flex;flex-direction:column;gap:0.6rem;width:100%;max-width:260px;}
 .hero-badge{
   display:flex;align-items:center;gap:0.7rem;
-  background:var(--card);border:1px solid var(--border);
   border-radius:10px;padding:0.6rem 1rem;
   font-size:0.78rem;color:var(--muted2);
-  backdrop-filter:blur(8px);
-  box-shadow:var(--card-shadow);
   transition:border-color 0.25s,transform 0.25s,box-shadow 0.25s;
 }
 .hero-badge:hover{border-color:var(--accent);transform:translateY(-3px);}
@@ -374,11 +370,8 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
 /* ABOUT */
 .about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;}
 .about-card{
-  background:var(--card);border:1px solid var(--border);
   border-radius:16px;padding:1.5rem;
   transition:border-color 0.25s,transform 0.25s,box-shadow 0.25s;
-  backdrop-filter:blur(8px);
-  box-shadow:var(--card-shadow);
 }
 .about-card:hover{
   border-color:var(--accent);transform:translateY(-5px);
@@ -397,12 +390,10 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
 /* SKILLS */
 .skills-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1rem;}
 .skill-card{
-  background:var(--card);border:1px solid var(--border);
   border-radius:14px;padding:1.4rem 1rem;text-align:center;
   transition:border-color 0.25s,transform 0.25s,box-shadow 0.25s;
-  cursor:default;backdrop-filter:blur(8px);
+  cursor:default;
   display:flex;flex-direction:column;align-items:center;gap:0.6rem;
-  box-shadow:var(--card-shadow);
 }
 .skill-card:hover{
   border-color:var(--accent);transform:translateY(-6px) scale(1.03);
@@ -418,18 +409,29 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
 /* PROJECTS */
 .projects-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1.5rem;}
 .proj-card{
-  background:var(--card);border:1px solid var(--border);
   border-radius:18px;overflow:hidden;
+  isolation:isolate;
   transition:transform 0.3s cubic-bezier(0.16,1,0.3,1),border-color 0.25s,box-shadow 0.3s;
-  backdrop-filter:blur(8px);
-  box-shadow:var(--card-shadow);
+  /* Promote to its own compositor layer so the backdrop-filter blur +
+     rounded clip aren't recalculated every frame while the image inside
+     scales — this combination (backdrop-filter + border-radius +
+     overflow:hidden + an animating child) is what caused the
+     shimmer/line flicker while hovering. */
+  will-change:transform;
+  transform:translateZ(0);
 }
 .proj-card:hover{
-  transform:translateY(-8px);
+  transform:translateY(-8px) translateZ(0);
   border-color:rgba(59,130,246,0.45);
   box-shadow:0 16px 40px rgba(30,58,138,0.25),var(--card-shadow);
 }
-.proj-screen img{transition:transform 0.5s cubic-bezier(0.16,1,0.3,1);}
+.proj-screen img{
+  /* Was 0.5s while the card lift above is 0.3s, so the picture kept
+     zooming after the card had already finished moving — that mismatch
+     is what read as a "glitch". Now both move in lockstep. */
+  transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  will-change:transform;
+}
 .proj-card:hover .proj-screen img{transform:scale(1.06);}
 .proj-header{
   position:relative;height:190px;overflow:hidden;
@@ -469,7 +471,7 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
   width:2px;background:linear-gradient(180deg,var(--accent),var(--accent2),var(--accent3));
   border-radius:99px;
 }
-.tl-item{position:relative;margin-bottom:2.5rem;transition:all 0.3s;}
+.tl-item{position:relative;margin-bottom:2.5rem;}
 .tl-dot{
   position:absolute;left:-2rem;top:0.2rem;
   width:16px;height:16px;border-radius:50%;
@@ -479,11 +481,8 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
 }
 .tl-item:hover .tl-dot{transform:scale(1.3);box-shadow:0 0 20px var(--accent);}
 .tl-content{
-  background:var(--card);border:1px solid var(--border);
   border-radius:14px;padding:1.3rem;
   transition:border-color 0.25s,transform 0.25s,box-shadow 0.25s;
-  backdrop-filter:blur(8px);
-  box-shadow:var(--card-shadow);
 }
 .tl-item:hover .tl-content{box-shadow:0 10px 30px rgba(59,130,246,0.15),var(--card-shadow);}
 .tl-item:hover .tl-content{border-color:var(--accent);transform:translateX(6px);}
@@ -545,6 +544,16 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
 }
 #scrollTop:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 8px 24px rgba(59,130,246,0.45);}
 #scrollTop.show{display:flex;}
+
+/* Shared "glass" card look (dark translucent + blur + border + shadow),
+   previously copy-pasted into about-card, skill-card, proj-card,
+   tl-content, and hero-badge separately. */
+.glass-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  backdrop-filter:blur(8px);
+  box-shadow:var(--card-shadow);
+}
 
 /* SECTION DIVIDER */
 .divider{
@@ -708,7 +717,7 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
   <h2 class="sec-title fade-up">About Me</h2>
   <div class="sec-line fade-up"></div>
   <div class="about-grid">
-    <div class="about-card fade-up">
+    <div class="about-card glass-card fade-up">
       <div class="about-card-icon">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -724,7 +733,7 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
       <h3>Who I Am</h3>
       <p>A computer science graduate passionate about building real-world applications. Completed Java Full Stack training at Edifice Technologies and eager to grow as a Cloud & DevOps Engineer.</p>
     </div>
-    <div class="about-card fade-up">
+    <div class="about-card glass-card fade-up">
       <div class="about-card-icon">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -747,7 +756,7 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
         <li>Aggregate: 76%</li>
       </ul>
     </div>
-    <div class="about-card fade-up">
+    <div class="about-card glass-card fade-up">
       <div class="about-card-icon">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -772,7 +781,7 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
         <li>Badminton & Volleyball Prizes 2022, 2023</li>
       </ul>
     </div>
-    <div class="about-card fade-up">
+    <div class="about-card glass-card fade-up">
       <div class="about-card-icon">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -927,7 +936,7 @@ const heroBadges=[
 const hb=document.getElementById('hero-badges');
 heroBadges.forEach(b=>{
   const d=document.createElement('div');
-  d.className='hero-badge';
+  d.className='hero-badge glass-card';
   const iconHtml=b.imgSrc
     ? `<img src="${b.imgSrc}" class="hero-badge-icon" alt="">`
     : `<span class="hero-badge-icon"><i class="${b.fa}" style="font-size:22px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i></span>`;
@@ -962,7 +971,7 @@ const projects=[
 const sg=document.getElementById('skills-grid');
 skills.forEach(s=>{
   const c=document.createElement('div');
-  c.className='skill-card fade-up';
+  c.className='skill-card glass-card fade-up';
   let icon;
   if(s.svgIcon){ icon=`<span class="skill-icon-img" style="display:inline-flex;width:44px;height:44px;">${s.svgIcon}</span>`; }
   else if(s.imgSrc){ icon=`<img src="${s.imgSrc}" class="skill-icon-img${s.mono?' mono-icon':''}" alt="${s.name} logo">`; }
@@ -975,7 +984,7 @@ skills.forEach(s=>{
 const pg=document.getElementById('projects-grid');
 projects.forEach(p=>{
   const c=document.createElement('div');
-  c.className='proj-card fade-up';
+  c.className='proj-card glass-card fade-up';
   c.innerHTML=`<div class="proj-header">
       <div class="proj-browser-bar"><span class="proj-browser-dot"></span><span class="proj-browser-dot"></span><span class="proj-browser-dot"></span></div>
       <div class="proj-screen"><img src="${p.img}" alt="${p.title} interface screenshot" loading="lazy" decoding="async"></div>
@@ -1023,7 +1032,7 @@ timeline.forEach(t=>{
   const d=document.createElement('div');
   d.className='tl-item fade-up';
   d.innerHTML=`<div class="tl-dot"></div>
-    <div class="tl-content">
+    <div class="tl-content glass-card">
       <div class="tl-date">${t.date}</div>
       <div class="tl-title">${t.title}</div>
       <div class="tl-company">${t.company}</div>
@@ -1066,11 +1075,25 @@ type();
 // ---- STAGGERED REVEAL ----
 // Gives each card in a grid/timeline a slightly later reveal than the one
 // before it, so sections cascade in instead of popping in all at once.
+//
+// FIX: previously this set el.style.transitionDelay permanently. Because an
+// inline style always beats any CSS class rule, that delay kept applying to
+// EVERY transition on the element forever — including hover effects (the
+// skill-card border/transform/box-shadow transition is 0.25s in CSS, but a
+// card near the end of the grid kept an inline delay of 0.5s+ from load,
+// which is why cards after ~#7 felt sluggish on hover while the first few
+// felt instant). We still store the intended entrance delay, but clear it
+// once the entrance transition has actually finished playing, so hover
+// transitions go back to the normal, uniform 0.25s for every card.
 const prefersReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function applyStagger(selector,stepSeconds=0.08,maxSteps=8){
   if(prefersReducedMotion) return;
   document.querySelectorAll(selector).forEach((el,i)=>{
-    el.style.transitionDelay=`${Math.min(i,maxSteps)*stepSeconds}s`;
+    const delay=Math.min(i,maxSteps)*stepSeconds;
+    el.style.transitionDelay=`${delay}s`;
+    // Remember it so the reveal observer knows how long to wait before
+    // clearing it again.
+    el.dataset.entranceDelay=String(delay);
   });
 }
 applyStagger('.about-grid .about-card');
@@ -1079,8 +1102,23 @@ applyStagger('#projects-grid .proj-card',0.12);
 applyStagger('#timeline .tl-item',0.1);
 
 // ---- SCROLL OBSERVER ----
+const ENTRANCE_TRANSITION_MS=700; // matches the 0.7s fade-up/left/right transition
 const obs=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); } });
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const el=e.target;
+      el.classList.add('visible');
+      const entranceDelayMs=(parseFloat(el.dataset.entranceDelay)||0)*1000;
+      // Wait until the staggered fade-in has fully finished, then drop the
+      // inline transition-delay so hover/interaction transitions on this
+      // element go back to their normal CSS-defined speed, same as every
+      // other card.
+      setTimeout(()=>{
+        el.style.transitionDelay='';
+      }, entranceDelayMs+ENTRANCE_TRANSITION_MS+50);
+      obs.unobserve(el);
+    }
+  });
 },{threshold:0.1});
 document.querySelectorAll('.fade-up,.fade-left,.fade-right').forEach(el=>obs.observe(el));
 
@@ -1132,4 +1170,4 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 </script>
 </body>
-</html>
+</html> 
