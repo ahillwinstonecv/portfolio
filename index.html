@@ -61,13 +61,6 @@ body{
   pointer-events:none;z-index:9999;
   transform:translate(-50%,-50%);
   transition:width 0.2s,height 0.2s,background 0.2s,opacity 0.2s;
-  /* NOTE: mix-blend-mode:difference used to sit here. It inverts whatever
-     color is underneath the cursor, which looks fine over the flat dark
-     card backgrounds but produces an unpredictable bright (often yellow)
-     blob whenever it passes over a photo with varied colors — exactly the
-     "glitch" seen while hovering the project screenshots. A static glow
-     gives the same sense of a glowing cursor without ever fighting with
-     whatever image is underneath it. */
   box-shadow:0 0 10px rgba(59,130,246,0.65);
 }
 #cursor-ring{
@@ -259,13 +252,6 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
 }
 .hero-btns{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem;}
 
-/* Buttons: the hover colour is applied as a separate ::before layer that
-   only ever transitions its OPACITY. This avoids trying to transition
-   `background` directly from a gradient to a flat colour (or from
-   transparent to a gradient) — browsers can't interpolate between those
-   two value types, so they used to just snap instantly partway through
-   the transition, which read as a jarring "double colour" flash. Opacity
-   always interpolates smoothly, so the hover colour now fades in cleanly. */
 .btn-glow{
   display:inline-flex;align-items:center;justify-content:center;
   text-decoration:none;position:relative;isolation:isolate;overflow:hidden;
@@ -412,11 +398,6 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
   border-radius:18px;overflow:hidden;
   isolation:isolate;
   transition:transform 0.3s cubic-bezier(0.16,1,0.3,1),border-color 0.25s,box-shadow 0.3s;
-  /* Promote to its own compositor layer so the backdrop-filter blur +
-     rounded clip aren't recalculated every frame while the image inside
-     scales — this combination (backdrop-filter + border-radius +
-     overflow:hidden + an animating child) is what caused the
-     shimmer/line flicker while hovering. */
   will-change:transform;
   transform:translateZ(0);
 }
@@ -426,9 +407,6 @@ section{position:relative;z-index:10;padding:6rem 2rem;max-width:1080px;margin:0
   box-shadow:0 16px 40px rgba(30,58,138,0.25),var(--card-shadow);
 }
 .proj-screen img{
-  /* Was 0.5s while the card lift above is 0.3s, so the picture kept
-     zooming after the card had already finished moving — that mismatch
-     is what read as a "glitch". Now both move in lockstep. */
   transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
   will-change:transform;
 }
@@ -545,9 +523,6 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
 #scrollTop:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 8px 24px rgba(59,130,246,0.45);}
 #scrollTop.show{display:flex;}
 
-/* Shared "glass" card look (dark translucent + blur + border + shadow),
-   previously copy-pasted into about-card, skill-card, proj-card,
-   tl-content, and hero-badge separately. */
 .glass-card{
   background:var(--card);
   border:1px solid var(--border);
@@ -561,7 +536,7 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
   height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);
 }
 
-/* Fullscreen Canvas Background — always dark, colours unchanged */
+/* Fullscreen Canvas Background — always dark */
 #bg-canvas{
     position: fixed;
     top: 0;
@@ -579,7 +554,7 @@ footer .rights{display:block;margin-top:0.3rem;font-size:0.7rem;opacity:0.75;col
 <canvas id="bg-canvas"></canvas>
 
 <script>
-    // Canvas particle background — always dark (light mode removed)
+    // Canvas particle background — always dark
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
@@ -890,8 +865,6 @@ const ICONS = {
   github: `${ICON_BASE}/github/github-original.svg`
 };
 
-// Hand-drawn Tux (Linux mascot) — body in white/dark so it reads on the dark
-// card, with the beak and feet recoloured to yellow as requested.
 const TUX_SVG = `<svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="30" cy="34" rx="22" ry="30" fill="#111827"/>
   <ellipse cx="30" cy="40" rx="13" ry="22" fill="#f8fafc"/>
@@ -905,9 +878,6 @@ const TUX_SVG = `<svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
 </svg>`;
 
 // ---- SKILLS DATA ----
-// Java uses Devicon's official two-tone mark (steel-blue cup + red/orange steam —
-// this matches the real Java brand colours). GitHub is a single-colour mark so
-// it gets inverted for visibility on the dark background.
 const skills=[
   {name:'Java',imgSrc:ICONS.java},
   {name:'HTML5',imgSrc:ICONS.html5},
@@ -926,8 +896,6 @@ const skills=[
 ];
 
 // ---- HERO BADGES ----
-// "Cloud & DevOps" uses the infinity-loop glyph — the standard symbol used
-// across the industry (Azure DevOps, GitLab, etc.) to represent DevOps.
 const heroBadges=[
   {label:'Java Full Stack',imgSrc:ICONS.java},
   {label:'Cloud & DevOps',fa:'fa-solid fa-infinity'},
@@ -944,8 +912,6 @@ heroBadges.forEach(b=>{
   hb.appendChild(d);
 });
 
-// Projects: real interface screenshots. Keep these image files in the same
-// folder as this HTML file (or update the paths below to wherever you host them).
 const projects=[
   {
     title:'KART GLOBAL/PREMIUM E-COMMERCE',
@@ -1072,19 +1038,6 @@ function type(){
 }
 type();
 
-// ---- STAGGERED REVEAL ----
-// Gives each card in a grid/timeline a slightly later reveal than the one
-// before it, so sections cascade in instead of popping in all at once.
-//
-// FIX: previously this set el.style.transitionDelay permanently. Because an
-// inline style always beats any CSS class rule, that delay kept applying to
-// EVERY transition on the element forever — including hover effects (the
-// skill-card border/transform/box-shadow transition is 0.25s in CSS, but a
-// card near the end of the grid kept an inline delay of 0.5s+ from load,
-// which is why cards after ~#7 felt sluggish on hover while the first few
-// felt instant). We still store the intended entrance delay, but clear it
-// once the entrance transition has actually finished playing, so hover
-// transitions go back to the normal, uniform 0.25s for every card.
 const prefersReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function applyStagger(selector,stepSeconds=0.08,maxSteps=8){
   if(prefersReducedMotion) return;
@@ -1109,10 +1062,7 @@ const obs=new IntersectionObserver(entries=>{
       const el=e.target;
       el.classList.add('visible');
       const entranceDelayMs=(parseFloat(el.dataset.entranceDelay)||0)*1000;
-      // Wait until the staggered fade-in has fully finished, then drop the
-      // inline transition-delay so hover/interaction transitions on this
-      // element go back to their normal CSS-defined speed, same as every
-      // other card.
+
       setTimeout(()=>{
         el.style.transitionDelay='';
       }, entranceDelayMs+ENTRANCE_TRANSITION_MS+50);
@@ -1170,4 +1120,4 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 </script>
 </body>
-</html> 
+</html>
